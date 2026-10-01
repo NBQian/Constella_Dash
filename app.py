@@ -2,6 +2,8 @@
 
 Run `python fetch_data.py` first, then `python app.py` and open http://127.0.0.1:8050
 """
+import json
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -68,6 +70,28 @@ def axis(title, color=MUTED, **kw):
                  "zeroline": False, "tickfont_color": color}, **kw)
 
 
+def loading(*children):
+    """Keep the previous output visible but dimmed, with an "Updating…" badge, while the
+    callback that produces it is running (so stale charts aren't mistaken for new ones)."""
+    return dcc.Loading(
+        list(children), delay_show=150,
+        overlay_style={"visibility": "visible", "opacity": 0.35, "filter": "grayscale(1)"},
+        custom_spinner=html.Div([html.Div(className="spinner"), "Updating…"],
+                                className="loading-badge"),
+    )
+
+
+def card_head(title, badge_id):
+    """Section title plus a badge naming the token the section currently shows."""
+    return html.Div([html.H2(title), html.Span(id=badge_id, className="token-badge")],
+                    className="card-head")
+
+
+def token_badge(token_id, prefix=""):
+    r = universe.set_index("id").loc[token_id]
+    return [prefix, html.B(r.symbol), f" · {r['name']}"]
+
+
 app = Dash(__name__, title="Token Factor Dashboard")
 server = app.server  # WSGI entry point for gunicorn (e.g. on Render)
 app.layout = html.Div(className="page", children=[
@@ -93,7 +117,7 @@ app.layout = html.Div(className="page", children=[
                  className="control slider"),
     ]),
     html.Section(className="card", children=[
-        html.H2("Abnormal events"),
+        card_head("Abnormal events", "events-token"),
         html.Div(className="controls", children=[
             html.Div([html.Label("Target variable (one at a time)"),
                       dcc.RadioItems(EVENT_TARGETS, "none", id="event-target", inline=True,
@@ -113,14 +137,14 @@ app.layout = html.Div(className="page", children=[
         html.P(id="event-summary", className="stats"),
     ]),
     html.Section(className="card", children=[
-        html.H2("Time series"),
+        card_head("Time series", "ts-token"),
         dcc.Checklist(TS_SERIES, ["price", "volume_usd", "buyback_pct_supply", "market"],
                       id="ts-series",
                       inline=True, className="checklist"),
-        dcc.Graph(id="ts-graph", config={"displaylogo": False}),
+        loading(dcc.Graph(id="ts-graph", config={"displaylogo": False})),
     ]),
     html.Section(className="card", children=[
-        html.H2("Scatter"),
+        card_head("Scatter", "scatter-token"),
         html.Div(className="controls", children=[
             html.Div([html.Label("X axis"),
                       dcc.Dropdown(SCATTER_X, "volume_usd", id="scatter-x", clearable=False)],
@@ -132,14 +156,13 @@ app.layout = html.Div(className="page", children=[
                       dcc.RadioItems(KINDS, "log", id="y-kind", inline=True, className="radio")],
                      className="control"),
         ]),
-        dcc.Markdown(id="scatter-equation", className="equation", mathjax=True),
-        html.P(id="scatter-stats", className="stats"),
-        dcc.Graph(id="scatter-graph", config={"displaylogo": False}),
+        loading(dcc.Markdown(id="scatter-equation", className="equation", mathjax=True),
+                html.P(id="scatter-stats", className="stats"),
+                dcc.Graph(id="scatter-graph", config={"displaylogo": False})),
     ]),
     html.Section(className="card", children=[
-        html.H2("Beta ranking"),
-        html.P(id="beta-caption", className="stats"),
-        dash_table.DataTable(
+        card_head("Beta ranking", "beta-token"),
+        loading(html.P(id="beta-caption", className="stats"), dash_table.DataTable(
             id="beta-table",
             columns=[
                 {"name": "Rank", "id": "rank", "type": "numeric"},
@@ -166,30 +189,36 @@ app.layout = html.Div(className="page", children=[
                         "fontVariantNumeric": "tabular-nums", "minWidth": "60px"},
             style_cell_conditional=[{"if": {"column_id": c}, "textAlign": "left"}
                                     for c in ("symbol", "name", "segment", "buybacks")],
-        ),
+        )),
     ]),
     html.Footer(id="footer"),
 ])
 
 
-@app.callback(
+# Runs in the browser (no server round trip), so the chart callbacks that depend on these
+# options start at once and show their loading state immediately after a token change.
+app.clientside_callback(
+    f"""
+    function(tokenId, tsValue, sxValue, evValue) {{
+        const noBuybacks = !{json.dumps(sorted(universe.loc[universe["has_buybacks"], "id"]))}
+            .includes(tokenId);
+        const bb = {json.dumps(sorted(BUYBACK_COLS))};
+        const disable = opts => opts.map(o => ({{...o, disabled: noBuybacks && bb.includes(o.value)}}));
+        if (noBuybacks) {{
+            tsValue = tsValue.filter(v => !bb.includes(v));
+            if (bb.includes(sxValue)) sxValue = "volume_usd";
+            if (bb.includes(evValue)) evValue = "none";
+        }}
+        return [disable({json.dumps(TS_SERIES)}), tsValue, disable({json.dumps(SCATTER_X)}), sxValue,
+                disable({json.dumps(EVENT_TARGETS)}), evValue];
+    }}
+    """,
     Output("ts-series", "options"), Output("ts-series", "value"),
     Output("scatter-x", "options"), Output("scatter-x", "value"),
     Output("event-target", "options"), Output("event-target", "value"),
     Input("token", "value"),
     State("ts-series", "value"), State("scatter-x", "value"), State("event-target", "value"),
 )
-def toggle_buyback_options(token_id, ts_value, sx_value, ev_value):
-    has_bb = bool(universe.set_index("id").loc[token_id, "has_buybacks"])
-    disable = lambda opts: [{**o, "disabled": o["value"] in BUYBACK_COLS and not has_bb} for o in opts]
-    if not has_bb:
-        ts_value = [v for v in ts_value if v not in BUYBACK_COLS]
-        if sx_value in BUYBACK_COLS:
-            sx_value = "volume_usd"
-        if ev_value in BUYBACK_COLS:
-            ev_value = "none"
-    return (disable(TS_SERIES), ts_value, disable(SCATTER_X), sx_value,
-            disable(EVENT_TARGETS), ev_value)
 
 
 def event_target_series(daily, target, n):
@@ -231,6 +260,7 @@ def log_ticks(series):
 
 
 @app.callback(Output("ts-graph", "figure"), Output("event-summary", "children"),
+              Output("ts-token", "children"), Output("events-token", "children"),
               Input("token", "value"), Input("freq", "value"), Input("ts-series", "value"),
               Input("market-n", "value"), Input("event-target", "value"),
               Input("event-pct", "value"), Input("event-lookback", "value"))
@@ -293,7 +323,7 @@ def time_series(token_id, freq, series, n, target, pct, lookback):
     if not series:
         fig.add_annotation(text="Select at least one series", showarrow=False,
                            xref="paper", yref="paper", x=0.5, y=0.5, font_color=MUTED)
-    return fig, summary
+    return fig, summary, token_badge(token_id), token_badge(token_id)
 
 
 def tex_num(v, digits=4):
@@ -349,7 +379,7 @@ def scatter_axis(kind, col, sym, n):
 
 
 @app.callback(Output("scatter-graph", "figure"), Output("scatter-equation", "children"),
-              Output("scatter-stats", "children"),
+              Output("scatter-stats", "children"), Output("scatter-token", "children"),
               Input("token", "value"), Input("freq", "value"), Input("scatter-x", "value"),
               Input("x-kind", "value"), Input("y-kind", "value"), Input("market-n", "value"),
               Input("event-target", "value"), Input("event-pct", "value"),
@@ -406,11 +436,11 @@ def scatter(token_id, freq, x_col, x_kind, y_kind, n, target, pct, lookback):
         xaxis=axis(x_title, zeroline=x_kind != "level", zerolinecolor="#c3c2b7", **x_ticks),
         yaxis=axis(y_title, zeroline=y_kind != "level", zerolinecolor="#c3c2b7", **y_ticks),
     ))
-    return fig, equation, stats_text
+    return fig, equation, stats_text, token_badge(token_id)
 
 
 @app.callback(Output("beta-table", "data"), Output("beta-caption", "children"),
-              Output("beta-table", "style_data_conditional"),
+              Output("beta-table", "style_data_conditional"), Output("beta-token", "children"),
               Input("scatter-x", "value"), Input("x-kind", "value"), Input("y-kind", "value"),
               Input("freq", "value"), Input("market-n", "value"), Input("token", "value"))
 def beta_ranking(x_col, x_kind, y_kind, freq, n, token_id):
@@ -425,7 +455,7 @@ def beta_ranking(x_col, x_kind, y_kind, freq, n, token_id):
         caption += " Only tokens with buyback data are included."
     highlight = [{"if": {"filter_query": f'{{id}} = "{token_id}"'},
                   "backgroundColor": "#e8f0fb", "fontWeight": 600}]
-    return table.to_dict("records"), caption, highlight
+    return table.to_dict("records"), caption, highlight, token_badge(token_id, "Highlighted: ")
 
 
 @app.callback(Output("footer", "children"), Input("token", "value"))
