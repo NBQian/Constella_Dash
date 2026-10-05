@@ -1,0 +1,500 @@
+{
+ "curve-dao-token": {
+  "slugs": [
+   "curve-dex",
+   "crvusd",
+   "curve-llamalend-v2"
+  ],
+  "usd_1y": 29095534.01,
+  "kind": "protocol"
+ },
+ "aave": {
+  "slugs": [
+   "aave-v2",
+   "aave-v3",
+   "aave-v4"
+  ],
+  "usd_1y": 93556915.0,
+  "kind": "protocol"
+ },
+ "yearn-finance": {
+  "slugs": [
+   "yearn-finance",
+   "yearn-curating"
+  ],
+  "usd_1y": 640335.0,
+  "kind": "protocol"
+ },
+ "sky": {
+  "slugs": [
+   "sky-lending"
+  ],
+  "usd_1y": 203492257.0,
+  "kind": "protocol"
+ },
+ "sushi": {
+  "slugs": [
+   "sushiswap",
+   "sushiswap-v3",
+   "sushiswap-agg",
+   "sushi-perps",
+   "sushi-launchpad"
+  ],
+  "usd_1y": 9282151.740000002,
+  "kind": "protocol"
+ },
+ "nxm": {
+  "slugs": [
+   "nexus-mutual"
+  ],
+  "usd_1y": 1635126.04,
+  "kind": "protocol"
+ },
+ "lido-dao": {
+  "slugs": [
+   "lido"
+  ],
+  "usd_1y": 35730245.0,
+  "kind": "protocol"
+ },
+ "venus": {
+  "slugs": [
+   "venus-core-pool",
+   "venus-flux"
+  ],
+  "usd_1y": 3865717.11,
+  "kind": "protocol"
+ },
+ "raydium": {
+  "slugs": [
+   "raydium-amm",
+   "launchlab"
+  ],
+  "usd_1y": 25051193.0,
+  "kind": "protocol"
+ },
+ "orca": {
+  "slugs": [
+   "orca-dex"
+  ],
+  "usd_1y": 8564481.0,
+  "kind": "protocol"
+ },
+ "convex-finance": {
+  "slugs": [
+   "convex-finance"
+  ],
+  "usd_1y": 15137028.0,
+  "kind": "protocol"
+ },
+ "gmx": {
+  "slugs": [
+   "gmx-v1-perps",
+   "gmx-v2-perps",
+   "gmx-solana"
+  ],
+  "usd_1y": 14953442.0,
+  "kind": "protocol"
+ },
+ "pendle": {
+  "slugs": [
+   "pendle-v2",
+   "boros"
+  ],
+  "usd_1y": 16890015.0,
+  "kind": "protocol"
+ },
+ "meteora": {
+  "slugs": [
+   "meteora-damm-v1",
+   "meteora-dlmm",
+   "meteora-damm-v2",
+   "meteora-dynamic-bonding-curve"
+  ],
+  "usd_1y": 47348359.0,
+  "kind": "protocol"
+ },
+ "thorchain": {
+  "slugs": [
+   "thorchain-dex"
+  ],
+  "usd_1y": 2924817.73,
+  "kind": "protocol"
+ },
+ "syrup": {
+  "slugs": [
+   "maple"
+  ],
+  "usd_1y": 14338514.01,
+  "kind": "protocol"
+ },
+ "reserve-rights-token": {
+  "slugs": [
+   "reserve-protocol"
+  ],
+  "usd_1y": 746280.8,
+  "kind": "protocol"
+ },
+ "vvs-finance": {
+  "slugs": [
+   "vvs-standard",
+   "vvs-flawless"
+  ],
+  "usd_1y": 653291.0,
+  "kind": "protocol"
+ },
+ "railgun": {
+  "slugs": [
+   "railgun"
+  ],
+  "usd_1y": 4288175.0,
+  "kind": "protocol"
+ },
+ "debridge": {
+  "slugs": [
+   "debridge"
+  ],
+  "usd_1y": 7620311.0,
+  "kind": "protocol"
+ },
+ "velodrome-finance": {
+  "slugs": [
+   "velodrome-v1",
+   "velodrome-v2",
+   "velodrome-v3"
+  ],
+  "usd_1y": 5800423.67,
+  "kind": "protocol"
+ },
+ "uniswap": {
+  "slugs": [
+   "uniswap-v2",
+   "uniswap-v3"
+  ],
+  "usd_1y": 54474079.0,
+  "kind": "protocol"
+ },
+ "ondo-finance": {
+  "slugs": [
+   "ondo-yield-assets"
+  ],
+  "usd_1y": 2582465.0,
+  "kind": "protocol"
+ },
+ "ether-fi": {
+  "slugs": [
+   "ether.fi-stake",
+   "ether.fi-liquid",
+   "etherfi-borrowing-market",
+   "etherfi-cash-liquid"
+  ],
+  "usd_1y": 45112837.0,
+  "kind": "protocol"
+ },
+ "bonk": {
+  "slugs": [
+   "bonkswap",
+   "bonkbot",
+   "bonk-staked-sol",
+   "bonk.fun-launchpad",
+   "telemetry"
+  ],
+  "usd_1y": 17669433.72,
+  "kind": "protocol"
+ },
+ "spark-2": {
+  "slugs": [
+   "sparklend",
+   "spark-liquidity-layer"
+  ],
+  "usd_1y": 10399383.0,
+  "kind": "protocol"
+ },
+ "sun-token": {
+  "slugs": [
+   "sunswap-v2",
+   "sunpump"
+  ],
+  "usd_1y": 1073314.3,
+  "kind": "protocol"
+ },
+ "sui": {
+  "slugs": [
+   "sui-foundation"
+  ],
+  "usd_1y": 1291848.57,
+  "kind": "protocol"
+ },
+ "aerodrome-finance": {
+  "slugs": [
+   "aerodrome-v1",
+   "aerodrome-slipstream"
+  ],
+  "usd_1y": 92053954.0,
+  "kind": "protocol"
+ },
+ "chainlink": {
+  "slugs": [
+   "chainlink-staking"
+  ],
+  "usd_1y": 58742045.0,
+  "kind": "protocol"
+ },
+ "dydx-chain": {
+  "slugs": [
+   "dydx-v4"
+  ],
+  "usd_1y": 5552369.0,
+  "kind": "protocol"
+ },
+ "ethena": {
+  "slugs": [
+   "ethena-usde"
+  ],
+  "usd_1y": 2024046.9400000006,
+  "kind": "protocol"
+ },
+ "instadapp": {
+  "slugs": [
+   "fluid-lending",
+   "fluid-lite",
+   "fluid-dex",
+   "fluid-dex-lite"
+  ],
+  "usd_1y": 10019605.84,
+  "kind": "protocol"
+ },
+ "geodnet": {
+  "slugs": [
+   "geodnet"
+  ],
+  "usd_1y": 8392181.0,
+  "kind": "protocol"
+ },
+ "pump-fun": {
+  "slugs": [
+   "pump.fun",
+   "pumpswap",
+   "terminal",
+   "pump.fun-mobile-app"
+  ],
+  "usd_1y": 469357945.0,
+  "kind": "protocol"
+ },
+ "layerzero": {
+  "slugs": [
+   "layerzero-v2"
+  ],
+  "usd_1y": 3391193.0,
+  "kind": "protocol"
+ },
+ "deep": {
+  "slugs": [
+   "deepbook-v3"
+  ],
+  "usd_1y": 137499.0,
+  "kind": "protocol"
+ },
+ "hyperliquid": {
+  "slugs": [
+   "hyperliquid-perps",
+   "hyperliquid-spot-orderbook"
+  ],
+  "usd_1y": 710812265.0,
+  "kind": "protocol"
+ },
+ "arbitrum": {
+  "slugs": [
+   "arbitrum-timeboost",
+   "arbitrum-nitro"
+  ],
+  "usd_1y": 7567171.59,
+  "kind": "protocol"
+ },
+ "near": {
+  "slugs": [
+   "near-intents",
+   "near-perps"
+  ],
+  "usd_1y": 7490331.38,
+  "kind": "protocol"
+ },
+ "ssv-network": {
+  "slugs": [
+   "ssv-network"
+  ],
+  "usd_1y": 2418099.1,
+  "kind": "protocol"
+ },
+ "kinetiq": {
+  "slugs": [
+   "kinetiq-khype",
+   "kinetiq-earn",
+   "kinetiq-markets",
+   "kinetiq-launch",
+   "kinetiq-validators",
+   "kinetiq-kntq",
+   "kinetiq-markets-perps"
+  ],
+  "usd_1y": 4154218.1599999997,
+  "kind": "protocol"
+ },
+ "livepeer": {
+  "slugs": [
+   "livepeer"
+  ],
+  "usd_1y": 694725.0,
+  "kind": "protocol"
+ },
+ "helium": {
+  "slugs": [
+   "helium-network"
+  ],
+  "usd_1y": 2296688.0,
+  "kind": "protocol"
+ },
+ "edgex": {
+  "slugs": [
+   "edgex-perps",
+   "edgex-v2"
+  ],
+  "usd_1y": 187714767.0,
+  "kind": "protocol"
+ },
+ "rain": {
+  "slugs": [
+   "rain"
+  ],
+  "usd_1y": 986277.2899999998,
+  "kind": "protocol"
+ },
+ "doublezero": {
+  "slugs": [
+   "doublezero-network",
+   "doublezero-staked-sol",
+   "doublezero-edge"
+  ],
+  "usd_1y": 3333146.369999999,
+  "kind": "protocol"
+ },
+ "bitway": {
+  "slugs": [
+   "bitway-earn"
+  ],
+  "usd_1y": 663026.0,
+  "kind": "protocol"
+ },
+ "world-liberty-financial": {
+  "slugs": [
+   "world-liberty-financial"
+  ],
+  "usd_1y": 125097300.0,
+  "kind": "protocol"
+ },
+ "venice-token": {
+  "slugs": [
+   "venice"
+  ],
+  "usd_1y": 3017685.4299999997,
+  "kind": "protocol"
+ },
+ "kaito": {
+  "slugs": [
+   "kaito-capital-launchpad"
+  ],
+  "usd_1y": 350000.0,
+  "kind": "protocol"
+ },
+ "pons": {
+  "slugs": [
+   "pons-v1",
+   "pons-v2"
+  ],
+  "usd_1y": 34354648.0,
+  "kind": "protocol"
+ },
+ "stonk-3": {
+  "slugs": [
+   "stonkfun"
+  ],
+  "usd_1y": 31012587.0,
+  "kind": "protocol"
+ },
+ "the-black-bull": {
+  "slugs": [
+   "ansem.io"
+  ],
+  "usd_1y": 2067995.7200000004,
+  "kind": "protocol"
+ },
+ "avalanche-2": {
+  "slugs": [
+   "avalanche"
+  ],
+  "usd_1y": 3940661.0,
+  "kind": "chain"
+ },
+ "polygon-ecosystem-token": {
+  "slugs": [
+   "polygon"
+  ],
+  "usd_1y": 29171050.0,
+  "kind": "chain"
+ },
+ "solana": {
+  "slugs": [
+   "solana"
+  ],
+  "usd_1y": 27611219.0,
+  "kind": "chain"
+ },
+ "ethereum": {
+  "slugs": [
+   "ethereum"
+  ],
+  "usd_1y": 62136873.0,
+  "kind": "chain"
+ },
+ "cardano": {
+  "slugs": [
+   "cardano"
+  ],
+  "usd_1y": 120210.0,
+  "kind": "chain"
+ },
+ "stellar": {
+  "slugs": [
+   "stellar"
+  ],
+  "usd_1y": 570877.0,
+  "kind": "chain"
+ },
+ "the-open-network": {
+  "slugs": [
+   "ton"
+  ],
+  "usd_1y": 1040760.0,
+  "kind": "chain"
+ },
+ "internet-computer": {
+  "slugs": [
+   "icp"
+  ],
+  "usd_1y": 2020268.0,
+  "kind": "chain"
+ },
+ "tron": {
+  "slugs": [
+   "tron"
+  ],
+  "usd_1y": 347471683.0,
+  "kind": "chain"
+ },
+ "mantle": {
+  "slugs": [
+   "mantle"
+  ],
+  "usd_1y": 249223.0,
+  "kind": "chain"
+ }
+}

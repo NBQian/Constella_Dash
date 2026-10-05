@@ -5,8 +5,7 @@ body {
   font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .page { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
-header h1 { font-size: 22px; margin: 0 0 4px; }
-header p, footer p { color: #52514e; font-size: 13px; margin: 4px 0; }
+footer p, .subtitle { color: #52514e; font-size: 13px; margin: 4px 0; }
 .card {
   background: #fcfcfb;
   border: 1px solid #e3e2dd;
@@ -51,3 +50,53 @@ footer { margin-top: 16px; }
   border: 2px solid #c6daf5; border-top-color: #2a78d6; animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Sticky top bar: page navigation + global controls shared by both pages */
+.topbar {
+  position: sticky; top: 0; z-index: 1000;
+  background: rgba(252, 252, 251, 0.97); border-bottom: 1px solid #e3e2dd;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+}
+.topbar-inner { max-width: 1200px; margin: 0 auto; padding: 10px 16px 6px; }
+.brand-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.brand-row h1 { font-size: 18px; margin: 0; }
+.nav { display: flex; gap: 4px; }
+.nav-link {
+  padding: 6px 14px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  color: #52514e; text-decoration: none; border: 1px solid transparent;
+}
+.nav-link:hover { background: #f0efec; }
+.nav-link.active { background: #e8f0fb; color: #1d5fb0; border-color: #c6daf5; }
+.global-controls { margin-top: 8px; gap: 12px 20px; }
+.global-controls .control.slider { flex: 1 1 240px; min-width: 240px; }
+.control.universe { flex: 1 1 300px; min-width: 300px; }
+.universe-count { font-size: 12px; color: #52514e; margin-top: 4px; }
+.page-controls { margin-top: 0; }
+.control.leg { min-width: 220px; flex: 0 1 280px; }
+
+/* Two charts side by side (stacks on narrow screens) */
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+
+/* Two-step regression: labelled equations */
+.step-eq { display: flex; align-items: center; gap: 12px; }
+.step-eq .equation { margin: 6px 0; flex: 1; }
+.step-tag {
+  flex: none; font-size: 12px; font-weight: 700; color: #52514e; background: #f0efec;
+  border-radius: 999px; padding: 3px 10px;
+}
+
+/* Read-only window bar (illustration of the picked period) */
+.window-bar [data-disabled] { opacity: 1; cursor: default; }
+/* Keep the enabled look (purple range) even though the bar is disabled */
+.window-bar .dash-slider-range[data-disabled] {
+  background-color: var(--Dash-Fill-Interactive-Strong) !important;
+}
+.window-bar .dash-slider-thumb[data-disabled] {
+  border-color: var(--Dash-Fill-Inverse-Strong) !important; cursor: default !important;
+}
+.btn-secondary {
+  margin-top: 18px; padding: 7px 14px; border-radius: 6px; border: 1px solid #c3c2b7;
+  background: #fcfcfb; color: #0b0b0b; font-size: 13px; cursor: pointer;
+}
+.btn-secondary:hover { background: #f0efec; }
+.window-bar { margin-bottom: 10px; }

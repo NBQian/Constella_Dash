@@ -8,8 +8,11 @@ from scipy import stats
 
 import config
 
-# Columns that may contain zeros (no buyback that day): log(1+x) differences.
-ZERO_SAFE_COLS = {"buyback_usd", "buyback_tokens", "buyback_pct_supply"}
+# Flow columns: NaN for tokens without that data, 0 on days with none for tokens that have it.
+BUYBACK_COLS = {"buyback_usd", "buyback_tokens", "buyback_pct_supply"}
+REVENUE_COLS = {"revenue_usd", "revenue_pct_supply"}
+# Columns that may contain zeros (no flow that day): returns use 1 + x.
+ZERO_SAFE_COLS = BUYBACK_COLS | REVENUE_COLS
 
 
 @lru_cache(maxsize=1)
@@ -18,14 +21,32 @@ def load_cache():
     prices = pd.read_parquet(config.PRICES_FILE)
     buybacks = pd.read_parquet(config.BUYBACKS_FILE)
     meta = json.loads(config.META_FILE.read_text())
+    universe["has_revenue"] = universe["id"].isin(load_revenue()["id"].unique())
     return universe, prices, buybacks, meta
 
 
-def load_token(token_id):
-    """Daily frame: price, volume_usd, buyback_usd, buyback_tokens, buyback_pct_supply.
+@lru_cache(maxsize=1)
+def revenue_sources():
+    """{coin id: {"slugs": [...], "kind": "protocol" | "chain", "usd_1y": float}}."""
+    f = config.REVENUE_SOURCES_FILE
+    return json.loads(f.read_text()) if f.exists() else {}
 
-    Buyback columns are NaN for tokens without buyback data, and 0 on days with
-    no buyback for tokens that have it.
+
+@lru_cache(maxsize=1)
+def load_revenue():
+    """Long frame (date, revenue_usd, id) of DeFiLlama revenue; empty if not fetched yet."""
+    if not config.REVENUE_FILE.exists():
+        return pd.DataFrame(columns=["date", "revenue_usd", "id"])
+    return pd.read_parquet(config.REVENUE_FILE)
+
+
+def load_token(token_id):
+    """Daily frame: price, volume_usd, buyback_usd, buyback_tokens, buyback_pct_supply,
+    revenue_usd, revenue_pct_supply.
+
+    Buyback / revenue columns are NaN for tokens without that data, and 0 on days with
+    none for tokens that have it. "% of supply" = USD ÷ that day's price ÷ current total
+    supply, so buybacks (holders revenue) and revenue are in the same unit.
     """
     universe, prices, buybacks, _ = load_cache()
     info = universe.set_index("id").loc[token_id]
@@ -38,22 +59,58 @@ def load_token(token_id):
         df["buyback_pct_supply"] = df["buyback_tokens"] / info["supply"] * 100
     else:
         df[["buyback_usd", "buyback_tokens", "buyback_pct_supply"]] = np.nan
+
+    if info["has_revenue"]:
+        rev = load_revenue()
+        rev = rev[rev["id"] == token_id].set_index("date")["revenue_usd"]
+        df["revenue_usd"] = rev.reindex(df.index).fillna(0.0)
+        df["revenue_pct_supply"] = df["revenue_usd"] / df["price"] / info["supply"] * 100
+    else:
+        df[["revenue_usd", "revenue_pct_supply"]] = np.nan
     return df
 
 
+# Calendar periods: weeks end on Sunday, months at month end. Only complete periods are
+# kept (a partial first/last week or month would bias flows and returns).
+FREQ_RULES = {"W": "W-SUN", "M": "ME"}
+FREQ_NAMES = {"D": "daily", "W": "weekly", "M": "monthly"}
+PERIOD_NAMES = {"D": "day", "W": "week", "M": "month"}
+PERIODS_PER_YEAR = {"D": 365, "W": 52, "M": 12}
+
+
+def _complete(g, freq):
+    """Boolean mask over resampled periods: True when every calendar day has a row."""
+    size = g.size()
+    full = 7 if freq == "W" else size.index.days_in_month
+    return size == full
+
+
 def resample(df, freq):
-    """freq 'D' (unchanged) or 'W' (weeks ending Sunday; partial weeks dropped)."""
+    """freq 'D' (unchanged), 'W' (weeks ending Sunday) or 'M' (calendar months);
+    partial periods dropped. Price = last close, flows summed."""
     if freq == "D":
         return df
-    agg = {"price": "last", "volume_usd": "sum", "buyback_usd": "sum",
-           "buyback_tokens": "sum", "buyback_pct_supply": "sum"}
-    g = df.resample("W-SUN")
-    out = g.agg(agg)
-    out = out[g.size() == 7]
-    # sum() turns all-NaN buyback weeks into 0; restore NaN for tokens without data.
-    if df["buyback_usd"].isna().all():
-        out[list(ZERO_SAFE_COLS)] = np.nan
+    agg = {"price": "last", "volume_usd": "sum", **{c: "sum" for c in ZERO_SAFE_COLS}}
+    g = df.resample(FREQ_RULES[freq])
+    out = g.agg(agg)[_complete(g, freq)]
+    # sum() turns all-NaN periods into 0; restore NaN for tokens without that data.
+    for cols in (BUYBACK_COLS, REVENUE_COLS):
+        if df[list(cols)].isna().all().all():
+            out[list(cols)] = np.nan
     return out
+
+
+def resample_prices(panel, freq):
+    """Wide price panel at freq: last close of each complete period."""
+    if freq == "D":
+        return panel
+    g = panel.resample(FREQ_RULES[freq])
+    return g.last()[_complete(g, freq)]
+
+
+def resample_flags(flags, freq):
+    """Daily boolean flags to freq: a period is flagged if any of its days is."""
+    return flags if freq == "D" else flags.resample(FREQ_RULES[freq]).max()
 
 
 @lru_cache(maxsize=1)
@@ -70,10 +127,7 @@ def market_returns(n, freq="D", kind="log"):
     Each period averages over the tokens that have data for it (tokens listed
     mid-window join when their history starts).
     """
-    panel = price_panel().iloc[:, :n]
-    if freq == "W":
-        g = panel.resample("W-SUN")
-        panel = g.last()[g.size() == 7]
+    panel = resample_prices(price_panel().iloc[:, :n], freq)
     r = panel.apply(returns, kind=kind)
     return r.mean(axis=1, skipna=True).rename("market")
 
@@ -103,7 +157,9 @@ def returns(series, kind="log"):
     kind="simple": x_t / x_{t-1} - 1
     Buyback columns use 1+x in place of x so zero-buyback periods stay defined.
     """
-    x = series + 1 if series.name in ZERO_SAFE_COLS else series.where(series > 0)
+    # Flows use 1 + x; values <= 0 (e.g. a rare negative revenue day) give no return.
+    x = series + 1 if series.name in ZERO_SAFE_COLS else series
+    x = x.where(x > 0)
     r = np.log(x).diff() if kind == "log" else x.pct_change(fill_method=None)
     return r.replace([np.inf, -np.inf], np.nan)
 
@@ -142,13 +198,17 @@ def fit(d):
     return stats.linregress(d["x"], d["y"])
 
 
-def beta_table(x_col, x_kind, y_kind, freq, n):
-    """Regression of each token's price on the factor (scatter settings), ranked by beta."""
+def beta_table(x_col, x_kind, y_kind, freq, n, ids=None):
+    """Regression of each token's price on the factor (scatter settings), ranked by beta.
+    `ids` limits it to those coins (all when None)."""
     universe, *_ = load_cache()
+    if ids is not None:
+        universe = universe[universe["id"].isin(ids)]
     market = market_factor(n, freq, x_kind) if x_col == "market" else None
     rows = []
     for r in universe.itertuples():
-        if x_col in ZERO_SAFE_COLS and not r.has_buybacks:
+        if (x_col in BUYBACK_COLS and not r.has_buybacks) or \
+                (x_col in REVENUE_COLS and not r.has_revenue):
             continue
         d = regression_data(load_token(r.id), x_col, x_kind, y_kind, freq, n, market)
         f = fit(d)

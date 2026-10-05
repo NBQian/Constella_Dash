@@ -100,6 +100,13 @@ def markets_by_ids(ids):
     return _to_frame(coins)
 
 
+def coin_categories(coin_id):
+    """CoinGecko's category tags for one coin (e.g. "Lending/Borrowing Protocols")."""
+    data = _get(f"/coins/{coin_id}", localization="false", tickers="false", market_data="false",
+                community_data="false", developer_data="false", sparkline="false")
+    return data.get("categories") or []
+
+
 def daily_market_chart(coin_id, days=config.DAYS):
     """Daily close price and 24h volume (USD), indexed by UTC date of the trading day.
 

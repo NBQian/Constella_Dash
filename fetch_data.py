@@ -3,10 +3,13 @@
 Universe = top N_TOKENS coins by market cap, plus the largest-market-cap coins with
 DeFiLlama buyback data until N_BUYBACK_TOKENS coins have buybacks.
 
-Usage: python fetch_data.py
+Usage: python fetch_data.py                   # everything
+       python fetch_data.py --categories-only  # only refresh data/categories.json
+       python fetch_data.py --revenue-only     # only refresh data/revenue.parquet
 """
 import json
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
@@ -66,6 +69,45 @@ def fetch_buyback(gid, info):
     if s.empty or s.sum() <= 0:
         return None
     return pd.DataFrame({"date": s.index, "buyback_usd": s.values, "id": gid})
+
+
+def fetch_categories(ids):
+    """Raw CoinGecko category tags for each coin, saved to data/categories.json.
+
+    Tags are mapped to one business-type category per coin in analytics (config.CATEGORY_RULES),
+    so the mapping can be changed without refetching.
+    """
+    cats = {}
+    for i, cid in enumerate(ids, 1):
+        try:
+            cats[cid] = coingecko.coin_categories(cid)
+        except Exception as e:
+            log.warning("%s: categories failed (%s)", cid, e)
+            cats[cid] = []
+        if i % 10 == 0:
+            log.info("categories: %d/%d", i, len(ids))
+    config.CATEGORIES_FILE.write_text(json.dumps(cats, indent=1))
+    log.info("saved categories for %d coins", len(cats))
+
+
+def fetch_revenue(ids):
+    """Daily DeFiLlama revenue (protocol, else chain) for the coins, saved to
+    data/revenue.parquet with its sources in data/revenue_sources.json."""
+    sources = defillama.revenue_sources(ids)
+    log.info("%d coins with >= $%s revenue in the last year (%d protocol, %d chain)", len(sources),
+             f"{config.MIN_REVENUE_USD_1Y:,.0f}", sum(t["kind"] == "protocol" for t in sources.values()),
+             sum(t["kind"] == "chain" for t in sources.values()))
+    frames = []
+    for gid, t in sources.items():
+        s = defillama.daily_buybacks_usd(t["slugs"], "dailyRevenue")
+        if s.empty:
+            continue
+        frames.append(pd.DataFrame({"date": s.index, "revenue_usd": s.values, "id": gid}))
+    out = (pd.concat(frames, ignore_index=True) if frames
+           else pd.DataFrame(columns=["date", "revenue_usd", "id"]))
+    out.to_parquet(config.REVENUE_FILE, index=False)
+    config.REVENUE_SOURCES_FILE.write_text(json.dumps(sources, indent=1))
+    log.info("saved revenue for %d coins", out["id"].nunique())
 
 
 def main():
@@ -132,7 +174,14 @@ def main():
              len(universe), (universe["segment"] == "top").sum(), config.N_TOKENS,
              (universe["segment"] == "buyback").sum(), universe["has_buybacks"].sum())
     log.info("universe: %s", ", ".join(universe["symbol"]))
+    fetch_categories(list(universe["id"]))
+    fetch_revenue(list(universe["id"]))
 
 
 if __name__ == "__main__":
-    main()
+    if "--categories-only" in sys.argv:
+        fetch_categories(list(pd.read_csv(config.UNIVERSE_FILE)["id"]))
+    elif "--revenue-only" in sys.argv:
+        fetch_revenue(list(pd.read_csv(config.UNIVERSE_FILE)["id"]))
+    else:
+        main()
