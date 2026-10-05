@@ -167,13 +167,13 @@ choose from the same factor list:
 1. **Step 1, eliminate.** OLS of the target on the factors whose effect should be removed first
    (e.g. the market or Bitcoin). The residual $e^{(1)}$ is kept:
 
-   $$r_t = \alpha_1 + \sum_{k \in S_1} \beta_k\, x_{k,t} + e^{(1)}_t$$
+   $$r_t = \alpha_1 + \sum_{k \in S_1} \beta_k x_{k,t} + e^{(1)}_t$$
 
    Step 1 is always OLS, so $e^{(1)}$ is exactly uncorrelated with the eliminated factors.
 2. **Step 2, explain.** The residual is regressed on the factors to study (factors used in step 1
    are disabled here):
 
-   $$e^{(1)}_t = \alpha_2 + \sum_{k \in S_2} \gamma_k\, x_{k,t} + \varepsilon_t$$
+   $$e^{(1)}_t = \alpha_2 + \sum_{k \in S_2} \gamma_k x_{k,t} + \varepsilon_t$$
 
 **Factors**: market (top *n*), [sector](#sector-index) (the token's category peers, excluding the
 token itself), Bitcoin, Ethereum, and the token's own trading volume, buybacks and revenue (each
@@ -185,9 +185,9 @@ units or [standardized](#standardized-coefficients), with 95% confidence interva
 cumulative target, $e^{(1)}$ and $\varepsilon$ over time, and a table with t-stats, p-values and
 [VIF](#vif). The stats line reports
 
-$$R^2_{\text{step 1}} = 1 - \frac{\operatorname{Var}(e^{(1)})}{\operatorname{Var}(r)}, \qquad
-R^2_{\text{step 2}} = 1 - \frac{\operatorname{Var}(\varepsilon)}{\operatorname{Var}(e^{(1)})}, \qquad
-R^2_{\text{total}} = 1 - \frac{\operatorname{Var}(\varepsilon)}{\operatorname{Var}(r)}.$$
+$$R^2_{\text{step 1}} = 1 - \frac{\mathrm{Var}(e^{(1)})}{\mathrm{Var}(r)}, \qquad
+R^2_{\text{step 2}} = 1 - \frac{\mathrm{Var}(\varepsilon)}{\mathrm{Var}(e^{(1)})}, \qquad
+R^2_{\text{total}} = 1 - \frac{\mathrm{Var}(\varepsilon)}{\mathrm{Var}(r)}.$$
 
 **Step-2 regularization**: OLS, **Ridge** (L2; shrinks all coefficients and stabilizes correlated
 factors), **Lasso** (L1; can set coefficients exactly to 0, i.e. selects factors) or **Elastic
@@ -213,7 +213,7 @@ in step 1, or regularizing step 2, addresses this.
 The pair trade "long coin A, short coin B". The chart shows the cumulative spread (black) with the
 two coins' own cumulative log returns for context, and the per-period spread returns underneath:
 
-$$s_t = r^{A}_t - h\, r^{B}_t, \qquad h = 1 \ \text{(1 : 1) or } h = \beta \ \text{(β-hedged)}$$
+$$s_t = r^{A}_t - h r^{B}_t, \qquad h = 1 \quad \text{(1 : 1), or} \quad h = \beta \quad \text{(β-hedged)}$$
 
 See [hedge ratio](#hedge-ratio) for how β is estimated and why it minimizes the spread's variance.
 
@@ -276,7 +276,7 @@ Pairs need at least 10 overlapping periods.
 
 For a price (or flow) series $x_t$ at the chosen frequency:
 
-$$r_t = \ln\frac{x_t}{x_{t-1}} \ \ \text{(log return)}, \qquad R_t = \frac{x_t}{x_{t-1}} - 1 \ \ \text{(simple return)}.$$
+$$r_t = \ln\frac{x_t}{x_{t-1}} \quad \text{(log return)}, \qquad R_t = \frac{x_t}{x_{t-1}} - 1 \quad \text{(simple return)}.$$
 
 Buyback and revenue series contain zeros, so their returns use $1 + x_t$ in place of $x_t$. On the
 rare days a protocol reports negative revenue (incentives above fees) the value is not defined and
@@ -289,7 +289,7 @@ The market return is the plain average of the coins' simple returns, and the ind
 from 100 at the start of the data:
 
 $$R^{\text{mkt}}_t = \frac{1}{n_t} \sum_{i=1}^{n_t} \left(\frac{P_{i,t}}{P_{i,t-1}} - 1\right), \qquad
-I_t = I_{t-1}\,(1 + R^{\text{mkt}}_t), \quad I_0 = 100.$$
+I_t = I_{t-1} (1 + R^{\text{mkt}}_t), \quad I_0 = 100.$$
 
 $n_t \le n$ is the number of top-*n* coins with prices on that date, so coins listed partway
 through the year join when their history starts. Equal weights mean a 1% move in the 10th-largest
@@ -302,8 +302,8 @@ on a day are −0.23%, −1.66% and −1.16%, the market return is −1.02% and 
 The same construction as the market index, over the token's **category peers**, excluding the
 token itself (so the sector factor is not partly the token):
 
-$$R^{\text{sec}(i)}_t = \frac{1}{|C_i| - 1} \sum_{j \in C_i,\ j \ne i} R_{j,t}, \qquad
-I^{\text{sec}(i)}_t = I^{\text{sec}(i)}_{t-1}\,(1 + R^{\text{sec}(i)}_t), \quad I_0 = 100,$$
+$$R^{\text{sec}(i)}_t = \frac{1}{|C_i| - 1} \sum_{j \in C_i, j \ne i} R_{j,t}, \qquad
+I^{\text{sec}(i)}_t = I^{\text{sec}(i)}_{t-1} (1 + R^{\text{sec}(i)}_t), \quad I_0 = 100,$$
 
 where $C_i$ is the token's category. In a pair regression both coins are excluded (see
 [above](#multi-factor-regression-on-the-spread)).
@@ -314,8 +314,8 @@ DeFiLlama reports USD amounts per day. To compare them across tokens and with ea
 converted to tokens at that day's price and expressed as a share of the **current** total supply
 (historical supply isn't available):
 
-$$\text{buyback \%}_t = \frac{B^{\text{USD}}_t / P_t}{\text{supply}} \times 100, \qquad
-\text{revenue \%}_t = \frac{\text{Rev}^{\text{USD}}_t / P_t}{\text{supply}} \times 100.$$
+$$\text{buyback pct of supply}_t = \frac{B^{\text{USD}}_t / P_t}{\text{supply}} \times 100, \qquad
+\text{revenue pct of supply}_t = \frac{\text{Rev}^{\text{USD}}_t / P_t}{\text{supply}} \times 100.$$
 
 **Revenue** is the part of fees the protocol (or chain) keeps; **holders revenue**, the buyback
 proxy, is the part of revenue paid out to token holders, so buybacks ≤ revenue for every coin.
@@ -324,11 +324,11 @@ proxy, is the part of revenue paid out to token holders, so buybacks ≤ revenue
 
 The β-hedged pair uses the OLS slope of A's returns on B's over the whole period:
 
-$$\beta = \frac{\operatorname{Cov}(r^A, r^B)}{\operatorname{Var}(r^B)} = \rho_{AB}\,\frac{\sigma_A}{\sigma_B}.$$
+$$\beta = \frac{\mathrm{Cov}(r^A, r^B)}{\mathrm{Var}(r^B)} = \rho_{AB} \frac{\sigma_A}{\sigma_B}.$$
 
 It is the hedge with the **lowest spread variance**. The variance of the spread,
 
-$$\operatorname{Var}(r^A - h\, r^B) = \sigma_A^2 - 2h\operatorname{Cov}(r^A, r^B) + h^2\sigma_B^2,$$
+$$\mathrm{Var}(r^A - h r^B) = \sigma_A^2 - 2h\mathrm{Cov}(r^A, r^B) + h^2\sigma_B^2,$$
 
 is minimized where its derivative in $h$ is zero, i.e. at $h = \beta$; the resulting spread is
 uncorrelated with B. Example, ETH − BTC
@@ -338,7 +338,7 @@ forecast.
 
 ### Standardized coefficients
 
-$$\beta^{\text{std}}_k = \beta_k \, \frac{\sigma_{x_k}}{\sigma_y},$$
+$$\beta^{\text{std}}_k = \beta_k  \frac{\sigma_{x_k}}{\sigma_y},$$
 
 the change in y (in standard deviations) per one-standard-deviation move in the factor, which
 makes factors with different units comparable.
@@ -358,7 +358,7 @@ Before penalizing, factors and target are standardized (mean 0, standard deviati
 penalty treats every factor equally; coefficients are converted back to original units for display.
 One penalty scale is used for all methods (scikit-learn's elastic-net objective):
 
-$$\min_{w}\ \frac{1}{2n}\lVert y - Xw\rVert^2 + \alpha\,\lambda\,\lVert w\rVert_1 + \frac{\alpha (1-\lambda)}{2}\lVert w\rVert_2^2,$$
+$$\min_{w}~\frac{1}{2n}\lVert y - Xw\rVert^2 + \alpha \lambda \lVert w\rVert_1 + \frac{\alpha (1-\lambda)}{2}\lVert w\rVert_2^2,$$
 
 with $\lambda$ = 1 for Lasso, 0 for Ridge and the chosen L1 share for Elastic net. α is either set
 with the slider or chosen by **time-series cross-validation**: up to 5 expanding windows, each
