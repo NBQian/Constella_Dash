@@ -93,7 +93,8 @@ The sticky bar at the top is shared by both pages.
 ## Individual page
 
 Pick a **token** at the top of the page (only coins in the universe are listed; tokens without
-buyback data are marked). Options that need buyback or revenue data are disabled for tokens that
+buyback data are marked). Coins in every dropdown are sorted by market cap and numbered 1, 2, 3, …
+within that list, so a filtered list (e.g. only Lending coins) is numbered from 1 again. Options that need buyback or revenue data are disabled for tokens that
 don't have it.
 
 ### Abnormal events

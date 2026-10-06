@@ -22,10 +22,12 @@ CATEGORY_STYLE = {c: (CATEGORICAL[i % len(CATEGORICAL)], SYMBOLS[i % len(SYMBOLS
 
 
 def coin_options(ids, note_buybacks=False):
-    """Dropdown options for coins, in the given order."""
-    return [{"label": f"{INFO.at[i, 'symbol']} · {INFO.at[i, 'name']}"
+    """Dropdown options for coins, sorted by market cap (largest first) and numbered 1, 2, 3, …
+    within this list, so a filtered list is numbered from 1 again."""
+    ids = sorted(ids, key=lambda i: -INFO.at[i, "market_cap"])
+    return [{"label": f"{k}. {INFO.at[i, 'symbol']} · {INFO.at[i, 'name']}"
              + ("  (no buyback data)" if note_buybacks and not INFO.at[i, "has_buybacks"] else ""),
-             "value": i} for i in ids]
+             "value": i} for k, i in enumerate(ids, 1)]
 
 
 def base_layout(**kw):
