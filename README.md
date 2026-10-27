@@ -181,8 +181,9 @@ token itself), Bitcoin, Ethereum, and the token's own trading volume, buybacks a
 as % of supply or in USD). All enter as per-period log (or simple) returns.
 
 **Shown**: both fitted equations (standard errors under the OLS coefficients; the residuals
-$e^{(1)}$ and $\varepsilon$ are marked with a brace), a bar chart of each step's betas (original
-units or [standardized](#standardized-coefficients), with 95% confidence intervals for OLS), the
+$e^{(1)}$ and $\varepsilon$ are marked with a brace), a bar chart of each step's
+[standardized](#standardized-coefficients) betas, so factors in different units can be compared
+(95% confidence intervals for OLS; betas in original units are in the equations and table), the
 cumulative target, $e^{(1)}$ and $\varepsilon$ over time, and a table with t-stats, p-values and
 [VIF](#vif). The stats line reports
 

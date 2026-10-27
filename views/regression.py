@@ -66,11 +66,6 @@ def layout(p, title, step1_default, step2_default, note=None):
                           dcc.RadioItems([{"label": v, "value": k} for k, v in F.METHODS.items()],
                                          "ols", id=i("method"), inline=True, className="radio")],
                          className="control"),
-                html.Div([html.Label("Coefficient charts"),
-                          dcc.RadioItems([{"label": "β (original units)", "value": "raw"},
-                                          {"label": "Standardized", "value": "std"}],
-                                         "raw", id=i("scale"), inline=True, className="radio")],
-                         className="control"),
             ]),
             html.Div(id=i("penalty-box"), className="controls", children=[
                 html.Div([html.Label("Penalty strength α"),
@@ -95,8 +90,8 @@ def layout(p, title, step1_default, step2_default, note=None):
                 html.Div(className="step-eq", children=[
                     html.Span("Step 2", className="step-tag"),
                     dcc.Markdown(id=i("eq2"), className="equation", mathjax=True)]),
-                html.P(id=i("legend"), className="stats"),
-                html.P(id=i("stats"), className="stats"),
+                html.Div(id=i("stats"), className="reg-stats"),
+                html.Div(id=i("legend"), className="notation"),
                 html.Div(className="two-col", children=[
                     dcc.Graph(id=i("coef1"), config={"displaylogo": False}),
                     dcc.Graph(id=i("coef2"), config={"displaylogo": False}),
@@ -168,6 +163,23 @@ def rhs(res, factors, factor_tex, resid_tex):
 E1, EPS = r"e^{(1)}_t", r"\varepsilon_t"
 
 
+# ---------------------------------------------------------------- summary and notation
+
+E1_HTML = "e⁽¹⁾"
+
+
+def sup(base, s):
+    """`base` with superscript `s`, for the notation list (matches the equations' r^X)."""
+    return html.Span([base, html.Sup(s)])
+
+
+def stat_tile(label, value, sub, key=False):
+    """One key statistic: small label, large value, one-line explanation."""
+    return html.Div(className="stat-tile" + (" key" if key else ""), children=[
+        html.Div(label, className="stat-label"), html.Div(value, className="stat-value"),
+        html.Div(sub, className="stat-sub")])
+
+
 # ---------------------------------------------------------------- charts
 
 def empty_fig(text, height=260):
@@ -179,28 +191,25 @@ def empty_fig(text, height=260):
     return fig
 
 
-def coef_fig(res, frame, factors, scale, title, label):
-    """Bar chart of one step's betas (original units or standardized), 95% CIs for OLS."""
+def coef_fig(res, frame, factors, title, label):
+    """Bar chart of one step's standardized betas, so factors in different units are
+    comparable; 95% CIs for OLS. Betas in original units are in the equations and table."""
     if res is None:
         return empty_fig(f"{title}: no factors selected")
-    vals = res["coef"] if scale == "raw" else res["std_coef"]
-    vals = vals.reindex(factors)
+    vals = res["std_coef"].reindex(factors)
     err = None
     if res["method"] == "ols":
-        se = res["se"].reindex(factors)
-        if scale == "std":
-            se = se * frame[factors].std(ddof=0) / frame["y"].std(ddof=0)
+        se = res["se"].reindex(factors) * frame[factors].std(ddof=0) / frame["y"].std(ddof=0)
         err = dict(type="data", array=(1.96 * se).values, color=MUTED, thickness=1.5, width=4)
     fig = go.Figure(go.Bar(
         x=vals.values, y=[label(f) for f in factors], orientation="h",
         marker_color=[POS if v >= 0 else NEG for v in vals], error_x=err,
-        hovertemplate="%{y}<br>β = %{x:.4g}<extra></extra>"))
+        hovertemplate="%{y}<br>standardized β = %{x:.3f}<extra></extra>"))
     fig.update_layout(base_layout(
         height=max(260, 46 * len(factors) + 120), margin=dict(l=230, r=20, t=40, b=50),
         title=dict(text=title + (" (bars: 95% CI)" if err else ""), font=dict(size=13, color=INK),
                    x=0, xanchor="left"),
-        xaxis=axis("β (original units)" if scale == "raw"
-                   else "Standardized β (SDs of target per 1 SD of factor)",
+        xaxis=axis("Standardized β (SDs of target per 1 SD of factor)",
                    zeroline=True, zerolinecolor=INK),
         yaxis=dict(autorange="reversed", tickfont_color=MUTED)))
     return fig
@@ -315,21 +324,19 @@ def register(p, sources, build):
               *sources, Input("freq", "value"), Input("market-n", "value"),
               Input(i("step1"), "value"), Input(i("step2"), "value"), Input(i("kind"), "value"),
               Input(i("method"), "value"), Input(i("alpha-mode"), "value"),
-              Input(i("log-alpha"), "value"), Input(i("l1-ratio"), "value"),
-              Input(i("scale"), "value"))
+              Input(i("log-alpha"), "value"), Input(i("l1-ratio"), "value"))
     def run(*args):
         src = args[:len(sources)]
-        freq, n, step1, step2, kind, method, alpha_mode, log_alpha, l1_ratio, scale = \
-            args[len(sources):]
+        freq, n, step1, step2, kind, method, alpha_mode, log_alpha, l1_ratio = args[len(sources):]
         if not all(v is not None for v in src[:len(coin_inputs)]):
             raise PreventUpdate
         step1 = step1 or []
         step2 = [f for f in (step2 or []) if f not in step1]
         b = build(*src, factors=step1 + step2, freq=freq, kind=kind, n=n)
-        return render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio, scale)
+        return render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio)
 
 
-def render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio, scale):
+def render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio):
     frame, skipped, label, ftex = b["frame"], b["skipped"], b["factor_label"], b["factor_tex"]
     badge, period = b["badge"], analytics.PERIOD_NAMES[freq]
     skip_text = "; ".join(f"{label(f)} left out: {why}" for f, why in skipped.items())
@@ -341,8 +348,8 @@ def render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio,
                                  f"Not enough {period}s ({len(frame)}) for {k} factors.")
         msg = " ".join(filter(None, [msg, skip_text]))
         blank = empty_fig(msg)
-        return ("", "", "", msg, blank, blank, blank, blank, {"display": "none"}, [], blank, msg,
-                badge, badge)
+        return ("", "", None, html.P(msg, className="stats"), blank, blank, blank, blank,
+                {"display": "none"}, [], blank, msg, badge, badge)
 
     # Step-2 penalty (step 1 is always OLS so eliminated factors are fully removed).
     alpha, notes = 0.0, []
@@ -369,35 +376,52 @@ def render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio,
     eq2 = (rf"$${lhs2} = {rhs(res2, s2, ftex, EPS)}$$" if res2 else
            rf"$${mark(EPS)} = {lhs2}\quad\text{{(no step-2 factors)}}$$")
     names = {"log": "log return", "simple": "simple return"}[kind]
-    legend = (b["legend"].format(period=period, names=names)
-              + " Underbraced terms are residuals: e⁽¹⁾ is what is left of the target after step 1 "
-                "(and the target of step 2), ε what is left after step 2. "
-              + ("Standard errors in parentheses." if method == "ols" else
-                 "Step 1 is OLS (standard errors in parentheses); step 2 is penalized, so it has "
-                 "no standard errors and its coefficients are shrunk toward 0."))
+    terms = b["notation"] + [
+        (E1_HTML, "residual after step 1: what the eliminated factors leave unexplained "
+                  "(the target of step 2)"),
+        ("ε", "residual after step 2")]
+    legend = [
+        html.H3("Notation"),
+        html.Dl([html.Div([html.Dt(s), html.Dd(m)], className="term") for s, m in terms]),
+        html.P(f"Returns are {names}s per {period}. " + b["notation_note"] + " "
+               + ("Standard errors in parentheses." if method == "ols" else
+                  "Step 1 is OLS (standard errors in parentheses); step 2 is penalized, so it has "
+                  "no standard errors and its coefficients are shrunk toward 0.")),
+    ]
 
-    parts = [f"n = {len(frame)} {period}s"]
+    fmt = lambda v: f"{v:.3f}" if v is not None and np.isfinite(v) else "n/a"  # noqa: E731
+    tiles = [stat_tile("Sample", f"{len(frame)}",
+                       f"{period}s, {frame.index[0]:%Y-%m-%d} → {frame.index[-1]:%Y-%m-%d}")]
     if res1:
-        parts.append(f"step 1 R² = {res1['r2']:.3f} (share of the target explained)")
+        tiles.append(stat_tile("Step 1 R²", fmt(res1["r2"]),
+                               "share of the target explained by the eliminated factors"))
     if res2:
-        parts.append(f"step 2 R² = {res2['r2']:.3f} (share of e⁽¹⁾ explained)")
-        if method == "ols":
-            parts.append(f"step 2 adjusted R² = {res2['adj_r2']:.3f}")
+        tiles.append(stat_tile("Step 2 R²", fmt(res2["r2"]), "share of e⁽¹⁾ explained"
+                               + (f" · adjusted {fmt(res2['adj_r2'])}" if method == "ols" else "")))
         cv_o = F.cv_r2(out["frame2"], "ols")
-        cv_m = F.cv_r2(out["frame2"], method, alpha, l1_ratio) if method != "ols" else None
-        fmt = lambda v: f"{v:.3f}" if v is not None and np.isfinite(v) else "n/a (too few periods)"  # noqa: E731
-        parts.append(f"step 2 out-of-sample R² (time-series CV): OLS {fmt(cv_o)}"
-                     + (f", {F.METHODS[method].split(' ')[0]} {fmt(cv_m)}" if cv_m is not None else ""))
+        if fmt(cv_o) == "n/a":
+            tiles.append(stat_tile("Step 2 out-of-sample R²", "n/a",
+                                   "too few periods to cross-validate"))
+        elif method == "ols":
+            tiles.append(stat_tile("Step 2 out-of-sample R²", fmt(cv_o), "time-series CV"))
+        else:
+            cv_m = F.cv_r2(out["frame2"], method, alpha, l1_ratio)
+            tiles.append(stat_tile("Step 2 out-of-sample R²", fmt(cv_m),
+                                   f"time-series CV, {F.METHODS[method].split(' ')[0]} "
+                                   f"(OLS: {fmt(cv_o)})"))
         dropped = [label(f) for f in s2 if res2["coef"][f] == 0]
         if dropped:
             notes.append("set to 0 by the L1 penalty: " + ", ".join(dropped))
-    parts.append(f"total R² = {out['total_r2']:.3f}")
-    parts += notes
+    tiles.append(stat_tile("Total R²", fmt(out["total_r2"]),
+                           "share of the target explained by both steps", key=True))
     if skip_text:
-        parts.append(skip_text)
+        notes.append(skip_text)
+    stats = [html.Div(tiles, className="stat-tiles"),
+             html.Ul([html.Li(t) for t in notes], className="reg-notes") if notes else None]
 
-    c1 = coef_fig(res1, frame[["y", *s1]], s1, scale, "Step 1 betas (eliminated factors)", label)
-    c2 = coef_fig(res2, out["frame2"], s2, scale, "Step 2 betas (on residual e⁽¹⁾)", label)
+    c1 = coef_fig(res1, frame[["y", *s1]], s1, "Step 1 standardized betas (eliminated factors)",
+                  label)
+    c2 = coef_fig(res2, out["frame2"], s2, "Step 2 standardized betas (on residual e⁽¹⁾)", label)
     rf = resid_fig(frame, out, b["target_label"], period)
     if method != "ols" and res2:
         pf, pstyle = path_fig(out["frame2"], s2, method, alpha, l1_ratio, label), {}
@@ -429,7 +453,7 @@ def render(b, step1, step2, freq, kind, method, alpha_mode, log_alpha, l1_ratio,
           f"so OLS coefficients are unstable; eliminating one of them in step 1 or regularizing "
           f"step 2 helps. ")
     fc += ("High VIF: " + ", ".join(high) + ".") if high else "No factor has VIF above 5."
-    return (eq1, eq2, legend, " · ".join(parts), c1, c2, rf, pf, pstyle, rows,
+    return (eq1, eq2, legend, stats, c1, c2, rf, pf, pstyle, rows,
             corr_fig(corr, labels), fc, badge, badge)
 
 
@@ -445,9 +469,9 @@ def token_builder(token_id, factors, freq, kind, n):
         "target_tex": rf"r^{{{tex_sym(sym)}}}_t", "target_label": f"{sym} return",
         "factor_tex": lambda f: rf"r^{{{tex_sym(syms[f])}}}_t",
         "factor_label": lambda f: F.FACTORS[f][0],
-        "legend": "r = {names} per {period}; " + ", ".join(
-            f"{s} = {F.FACTORS[f][0]}" for f, s in syms.items()
-            if f in frame.columns) + ". Buyback and revenue factors use 1 + x.",
+        "notation": [(sup("r", sym), f"{sym} return (the target)")] + [
+            (sup("r", s), F.FACTORS[f][0]) for f, s in syms.items() if f in frame.columns],
+        "notation_note": "Buyback and revenue factors use 1 + x.",
     }
 
 
@@ -480,14 +504,16 @@ def pair_builder(a, b, hedge, factors, freq, kind, n):
         "frame": frame, "skipped": skipped, "badge": badge,
         "target_tex": r"s_t", "target_label": f"Spread {sa} − {sb}",
         "factor_tex": ftex, "factor_label": flabel,
-        "legend": (rf"s = r^{sa} − {'' if hedge != 'beta' else f'{h:.3f}·'}r^{sb}, the spread from the "
-                   "Spread section ({names} per {period}). Δr^X = r^X of "
-                   f"{sa} minus r^X of {sb} (coin-specific factors); market, BTC and ETH are the "
-                   "same for both coins (their difference is always 0), so they enter as they are "
-                   "and measure the spread's remaining exposure to them. Sector averages leave out "
-                   "both coins; "
-                   + ("both are in the same category, so the sector is a shared factor too. "
-                      if "sector" in shared else "they are in different categories, so the sector "
-                      "enters as A − B. ")
-                   + ", ".join(f"{syms[f]} = {F.FACTORS[f][0]}" for f in used) + "."),
+        "notation": [("s", html.Span([
+            "spread ", sup("r", sa), " − ", "" if hedge != "beta" else f"{h:.3f}·", sup("r", sb),
+            " from the Spread section (the target)"]))] + [
+            (sup("r" if f in shared else "Δr", syms[f]), flabel(f)) for f in used],
+        "notation_note": (
+            f"Δr^X = r^X of {sa} minus r^X of {sb} (coin-specific factors). Market, BTC and ETH "
+            "are the same for both coins (their difference is always 0), so they enter as they "
+            "are and measure the spread's remaining exposure to them. Sector averages leave out "
+            "both coins; "
+            + ("both are in the same category, so the sector is a shared factor too."
+               if "sector" in shared else
+               "they are in different categories, so the sector enters as A − B.")),
     }
